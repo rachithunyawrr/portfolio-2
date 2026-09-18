@@ -125,3 +125,9 @@ Har UPDATE is format me add karo:
 - Kyun kiya: Mirrored headings, transition ghosting, weak particles, hero overlap aur narrow viewport overflow fix karne ke liye.
 - Files affected: `package.json`, `package-lock.json`, `src/components/scene/WorldScene.tsx`, `src/components/scene/ParticleField.tsx`, `src/components/scene/shader.ts`, `src/lib/textPoints.ts`, `src/lib/particleVisibility.ts`, `AGENTS.md`.
 - Test/lint status: Asymmetric `F` particle test normal orientation mein pass; `npm run lint` clean; `npm run build` successful after final hero restoration.
+
+### [2026-09-18] — GitHub Push: Particle Formation Fixes
+- Kya kiya: Completed particle formation fixes ko `origin/main` par push kiya.
+- Kyun kiya: Verified changes ko shared GitHub branch par publish karna tha.
+- Files affected: Particle formation fix commit `b126da5`, `AGENTS.md`.
+- Test/lint status: Push successful (`1f446e4..b126da5`).
