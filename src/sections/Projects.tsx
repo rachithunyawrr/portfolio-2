@@ -39,7 +39,7 @@ export function Projects() {
       <div className="mx-auto max-w-6xl">
         <div className="text-center">
           <p data-reveal className="glow-text font-[family-name:var(--font-display)] text-4xl font-bold text-white sm:text-5xl">
-            My Work
+            Selected Projects
           </p>
           <p data-reveal data-reveal-delay="0.1" className="muted mt-4 text-sm sm:text-base">
             Real projects, built by hand with AI.

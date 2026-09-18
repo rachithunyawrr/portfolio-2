@@ -1,57 +1,80 @@
-export const particleVertexShader = /* glsl */ `
-  attribute vec3 aPos;
+export const particleVertexShader = `
+  attribute vec3 aStart;
+  attribute vec3 aTarget;
   attribute vec3 aColor;
-  attribute vec3 aRand;
-  attribute float aSize;
+  attribute vec3 aSeed;
 
   uniform float uTime;
+  uniform float uProgress;
   uniform float uPixelRatio;
-  uniform float uScatter;
+  uniform float uWave;
+  uniform float uOpacity;
 
   varying vec3 vColor;
   varying float vAlpha;
 
   void main() {
-    float tw = 0.72 + 0.28 * sin(uTime * (0.6 + aRand.x * 1.6) + aRand.y * 6.2831);
+    float delay = aSeed.x * 0.17;
+    float progress = smoothstep(delay, 1.0, uProgress);
+    vec3 position = mix(aStart, aTarget, progress);
+    float resting = smoothstep(0.72, 1.0, progress);
+    float drift = 0.028 * resting;
 
-    vec3 p = aPos;
-    p.x += sin(uTime * 0.5 + aRand.y * 6.2831) * 0.10;
-    p.y += cos(uTime * 0.44 + aRand.z * 6.2831) * 0.10;
-    p.z += sin(uTime * 0.38 + aRand.x * 6.2831) * 0.10;
+    position.x += sin(uTime * (0.62 + aSeed.y) + aSeed.x * 16.0) * drift;
+    position.y += cos(uTime * (0.51 + aSeed.z) + aSeed.y * 17.0) * drift;
+    position.z += sin(uTime * (0.44 + aSeed.x) + aSeed.z * 14.0) * drift;
+    position.y += sin(uTime * 3.0 + aTarget.x * 2.2 + aSeed.z * 8.0) * uWave * 0.22 * progress;
 
-    if (uScatter > 0.001) {
-      vec3 off = aRand * 2.0 - 1.0;
-      p += normalize(off + vec3(0.001)) * uScatter * (1.0 + aRand.x * 1.8);
-    }
+    vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+    float distanceToCamera = max(5.0, -viewPosition.z);
+    float twinkle = 0.82 + sin(uTime * (1.2 + aSeed.z * 2.1) + aSeed.x * 18.0) * 0.18;
 
-    vec4 mv = modelViewMatrix * vec4(p, 1.0);
-    float dist = -mv.z;
-
-    float fadeIn = smoothstep(38.0, 14.0, dist);
-    float fadeNear = smoothstep(1.2, 3.4, dist);
-
-    float size = aSize * (420.0 / max(dist, 1.0)) * uPixelRatio * tw;
-
+    gl_PointSize = (3.0 + aSeed.z * 2.6) * uPixelRatio * (20.0 / distanceToCamera) * twinkle;
+    gl_Position = projectionMatrix * viewPosition;
     vColor = aColor;
-    vAlpha = tw * fadeIn * fadeNear;
-
-    gl_PointSize = size;
-    gl_Position = projectionMatrix * mv;
+    vAlpha = mix(0.38, 1.0, progress) * twinkle * uOpacity;
   }
 `
 
-export const particleFragmentShader = /* glsl */ `
+export const particleFragmentShader = `
   precision highp float;
 
   varying vec3 vColor;
   varying float vAlpha;
 
   void main() {
-    vec2 d = gl_PointCoord - 0.5;
-    float r = length(d);
-    float a = smoothstep(0.5, 0.02, r);
-    a = pow(a, 2.6);
-    vec3 glow = vColor * 0.85 + vec3(0.35, 0.55, 1.0) * 0.25;
-    gl_FragColor = vec4(glow, a * vAlpha * 1.15);
+    vec2 point = gl_PointCoord - 0.5;
+    float distanceFromCenter = length(point);
+    float core = smoothstep(0.5, 0.0, distanceFromCenter);
+    float glow = pow(core, 2.4);
+    gl_FragColor = vec4(vColor * (0.9 + core * 0.45), glow * vAlpha);
+  }
+`
+
+export const starVertexShader = `
+  attribute vec3 aColor;
+  attribute float aSize;
+
+  uniform float uPixelRatio;
+
+  varying vec3 vColor;
+
+  void main() {
+    vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+    gl_PointSize = aSize * uPixelRatio * (42.0 / max(12.0, -viewPosition.z));
+    gl_Position = projectionMatrix * viewPosition;
+    vColor = aColor;
+  }
+`
+
+export const starFragmentShader = `
+  precision highp float;
+
+  varying vec3 vColor;
+
+  void main() {
+    vec2 point = gl_PointCoord - 0.5;
+    float glow = smoothstep(0.5, 0.04, length(point));
+    gl_FragColor = vec4(vColor, glow * 0.82);
   }
 `

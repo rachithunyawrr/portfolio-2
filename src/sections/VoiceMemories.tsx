@@ -1,14 +1,9 @@
 export function VoiceMemories() {
   return (
-    <section id="ch-voice" className="relative w-full overflow-hidden px-6 py-28 lg:py-36">
+    <section id="ch-voice" className="relative w-full overflow-hidden px-6 pb-28 pt-[66vh] lg:pb-36">
       <div className="mx-auto max-w-3xl text-center">
-        <p data-reveal className="entry mb-3 text-xs uppercase tracking-[0.4em] text-[#7cc0ff]">
-          Featured Project
-        </p>
-        <p data-reveal className="glow-text font-[family-name:var(--font-display)] text-4xl font-bold leading-tight text-white sm:text-6xl">
-          VoiceMemories AI
-        </p>
-        <p data-reveal data-reveal-delay="0.08" className="glow-gold mt-3 font-[family-name:var(--font-display)] text-base font-semibold text-[#ffb454] sm:text-lg">
+        <h2 className="sr-only">VoiceMemories AI</h2>
+        <p data-reveal data-reveal-delay="0.08" className="glow-gold font-[family-name:var(--font-display)] text-base font-semibold text-[#ffb454] sm:text-lg">
           My Own AI Product
         </p>
 

@@ -2,9 +2,9 @@ import { useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { scrollToTarget, scrollToTop } from '../lib/smoothScroll'
 
 const LINKS = [
-  { label: 'Work', href: '#work' },
-  { label: 'About', href: '#about' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'Work', href: '#ch-work' },
+  { label: 'About', href: '#ch-about' },
+  { label: 'Contact', href: '#ch-contact' },
 ]
 
 export function Navbar() {

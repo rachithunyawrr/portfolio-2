@@ -206,11 +206,11 @@ body {
   0%,
   100% {
     opacity: 0.15;
-    transform: scale(0.6);
+    transform: translate3d(-1px, 2px, 0) scale(0.6);
   }
   50% {
     opacity: 1;
-    transform: scale(1.2);
+    transform: translate3d(3px, -5px, 0) scale(1.2);
   }
 }
 

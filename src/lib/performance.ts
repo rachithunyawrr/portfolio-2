@@ -10,10 +10,9 @@ export function detectTier(): Tier {
     const cores = navigator.hardwareConcurrency ?? 0
     const memory = nav.deviceMemory ?? 0
 
-    if (coarse) {
-      if (cores > 0 && cores <= 4) return 'low'
-      if (memory > 0 && memory <= 4) return 'low'
-    }
+    if (cores > 0 && cores <= 4) return 'low'
+    if (memory > 0 && memory <= 4) return 'low'
+    if (coarse && cores === 0) return 'low'
     return 'high'
   } catch {
     return 'high'

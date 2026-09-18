@@ -1,6 +1,7 @@
 export function About() {
   return (
     <section id="ch-about" className="relative w-full px-6 pb-28 pt-[42vh]">
+      <h2 className="sr-only">Who Is Rachit</h2>
       <div className="mx-auto max-w-2xl text-center">
         <p data-reveal className="text-base leading-relaxed text-[#c9d4ec] sm:text-lg">
           I&apos;m Rachit Sharma. I completed 12th grade and got interested in AI in 2025. I wanted

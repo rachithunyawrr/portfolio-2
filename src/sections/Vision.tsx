@@ -19,8 +19,9 @@ const LINES = [
 
 export function Vision() {
   return (
-    <section id="ch-vision" className="relative w-full px-6 py-36 lg:py-44">
+    <section id="ch-vision" className="relative w-full px-6 pb-36 pt-[55vh] lg:pb-44">
       <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
+        <h2 className="sr-only">My Vision</h2>
         {LINES.map((l) => (
           <p
             key={l.delay}

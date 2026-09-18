@@ -16,13 +16,11 @@ export function Contact() {
   }
 
   return (
-    <section id="ch-contact" className="relative w-full px-6 pb-16 pt-[38vh]">
+    <section id="ch-contact" className="relative w-full px-6 pb-16 pt-[55vh]">
       <div className="mx-auto max-w-2xl">
-        <div data-reveal className="text-center">
-          <p className="muted text-xs uppercase tracking-[0.35em]">Say hello</p>
-        </div>
+        <h2 className="sr-only">Say Hello</h2>
 
-        <form data-reveal data-reveal-delay="0.08" onSubmit={onSubmit} className="card mx-auto mt-8 space-y-5 p-7 sm:p-9">
+        <form data-reveal data-reveal-delay="0.08" onSubmit={onSubmit} className="card mx-auto space-y-5 p-7 sm:p-9">
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="block">
               <span className="mb-2 block text-xs uppercase tracking-widest text-[#8fa3c9]">Name</span>

@@ -2,7 +2,6 @@ import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Lenis from 'lenis'
-import { TIER } from './lib/performance'
 import { setLenis } from './lib/smoothScroll'
 import { LoadingScreen } from './components/LoadingScreen'
 import { Navbar } from './components/Navbar'
@@ -28,9 +27,9 @@ function RevealInit({ loaded }: { loaded: boolean }) {
     if (!loaded) return
 
     const els = gsap.utils.toArray<HTMLElement>('[data-reveal]')
-    els.forEach((el) => {
+    const triggers = els.map((el) => {
       const delay = parseFloat(el.dataset.revealDelay || '0')
-      gsap.fromTo(
+      return gsap.fromTo(
         el,
         { y: 30, autoAlpha: 0 },
         {
@@ -44,10 +43,8 @@ function RevealInit({ loaded }: { loaded: boolean }) {
       )
     })
 
-    ScrollTrigger.defaults({ markers: false })
-
     return () => {
-      ScrollTrigger.getAll().forEach((t) => t.kill())
+      triggers.forEach((trigger) => trigger.scrollTrigger?.kill())
     }
   }, [loaded])
 
@@ -56,7 +53,13 @@ function RevealInit({ loaded }: { loaded: boolean }) {
 
 export default function App() {
   const [loaded, setLoaded] = useState(false)
+  const [sceneReady, setSceneReady] = useState(false)
   const onLoadComplete = useCallback(() => setLoaded(true), [])
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setSceneReady(true))
+    return () => cancelAnimationFrame(frame)
+  }, [])
 
   useEffect(() => {
     const lenis = new Lenis({ smoothWheel: true, autoRaf: false })
@@ -74,7 +77,7 @@ export default function App() {
     <>
       <FallbackBackground />
 
-      {TIER === 'high' && (
+      {sceneReady && (
         <div className="fixed inset-0 z-0">
           <SceneErrorBoundary>
             <Suspense fallback={null}>
@@ -88,8 +91,7 @@ export default function App() {
         <Navbar />
 
         <Hero />
-        <ReelSection id="ch-portfolio" label="Portfolio" />
-        <ReelSection id="ch-work" label="My Work" />
+        <ReelSection id="ch-work" />
         <About />
         <Story />
         <Skills />

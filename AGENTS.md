@@ -113,3 +113,15 @@ Har UPDATE is format me add karo:
 - Kyun kiya: Repo me agent guidance aur env setup share karna tha.
 - Files affected: `AGENTS.md` (new), `.env.example` (new), `.gitignore` (updated), commit `85b1c53`
 - Test/lint status: Push successful (`c21f3e1..85b1c53`).
+
+### [2026-09-18] — WebGL Particle Portfolio Rebuild
+- Kya kiya: Reusable shader-based `ParticleField` banaya jisme random cloud se canvas-sampled text, Icosahedron geometry aur waveform particle targets assemble hote hain. Har required heading ke liye scroll-synced morph, 3D starfield, camera flight/parallax, lazy canvas loading aur low-end particle scaling add ki. HTML sections ko requested portfolio copy, cards, contact form aur photo placeholder ke saath align kiya.
+- Kyun kiya: Static dot background ki jagah visible, real WebGL particle formations aur scroll par actual assembly effect chahiye tha.
+- Files affected: `src/components/scene/ParticleField.tsx` (new), `src/components/scene/WorldScene.tsx`, `src/components/scene/shader.ts`, `src/lib/textPoints.ts`, `src/App.tsx`, `src/index.css`, `src/lib/performance.ts`, `src/components/FallbackBackground.tsx`, `src/components/Navbar.tsx`, `src/sections/*`, `AGENTS.md`.
+- Test/lint status: `npm run lint` clean. `npm run build` successful.
+
+### [2026-09-18] — Particle Formation Targeted Fixes
+- Kya kiya: Camera ko standard -Z viewing direction par align kiya, canvas X mapping positive rakhi, formations ke liye exclusive opacity ownership add ki, 2px text sampling/dense points aur bloom add kiya, hero sphere ko chhota aur headline se upar place kiya, aur canvas aspect/FOV ke basis par responsive text-width clamp add ki.
+- Kyun kiya: Mirrored headings, transition ghosting, weak particles, hero overlap aur narrow viewport overflow fix karne ke liye.
+- Files affected: `package.json`, `package-lock.json`, `src/components/scene/WorldScene.tsx`, `src/components/scene/ParticleField.tsx`, `src/components/scene/shader.ts`, `src/lib/textPoints.ts`, `src/lib/particleVisibility.ts`, `AGENTS.md`.
+- Test/lint status: Asymmetric `F` particle test normal orientation mein pass; `npm run lint` clean; `npm run build` successful after final hero restoration.

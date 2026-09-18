@@ -1,160 +1,187 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import * as THREE from 'three'
+import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { DPR_LIMIT } from '../../lib/performance'
-import { CHAPTER_CAM_Z, FORMATION_DISTANCE, SCATTER_RANGE, clock, sceneState, sharedUniforms } from '../../lib/sceneState'
-import { buildFormation, type Formation, type FormationPlan } from '../../lib/textPoints'
-import { ParticlePoints } from './ParticlePoints'
+import * as THREE from 'three'
+import { DPR_LIMIT, TIER } from '../../lib/performance'
+import { createStarData, type ParticleTarget } from '../../lib/textPoints'
+import { ParticleField } from './ParticleField'
+import { starFragmentShader, starVertexShader } from './shader'
 
-type ChapterKey = keyof typeof CHAPTER_CAM_Z
+gsap.registerPlugin(ScrollTrigger)
 
-interface Placement {
-  id: ChapterKey
-  y: number
-  plan: FormationPlan
+interface CameraStop {
+  sectionId: string
+  z: number
 }
 
-const placements: Placement[] = [
-  { id: 'hero', y: 0.25, plan: { kind: 'shape', count: 3200 } },
-  { id: 'portfolio', y: 1.15, plan: { kind: 'text', text: 'PORTFOLIO', height: 4.0, count: 2600 } },
-  { id: 'work', y: 1.15, plan: { kind: 'text', text: 'MY WORK', height: 4.4, count: 2400 } },
-  { id: 'about', y: 1.2, plan: { kind: 'text', text: 'WHO IS RACHIT', height: 3.0, count: 3200 } },
-  { id: 'story', y: 0, plan: { kind: 'cloud', count: 2600 } },
-  { id: 'skills', y: 0, plan: { kind: 'cloud', count: 2600 } },
-  { id: 'projects', y: 0, plan: { kind: 'cloud', count: 2600 } },
-  { id: 'voice', y: 0.95, plan: { kind: 'wave', count: 1800 } },
-  { id: 'vision', y: 1.2, plan: { kind: 'text', text: 'MY VISION', height: 4.2, count: 2400 } },
-  { id: 'contact', y: 1.2, plan: { kind: 'text', text: 'hello@rachitsharma', height: 2.9, count: 3000 } },
+interface Placement extends CameraStop {
+  id: string
+  formationId: string
+  y: number
+  target: ParticleTarget
+  count: number
+  lowCount: number
+  rotate?: boolean
+}
+
+const cameraStops: CameraStop[] = [
+  { sectionId: 'ch-hero', z: 0 },
+  { sectionId: 'ch-work', z: 18 },
+  { sectionId: 'ch-about', z: 36 },
+  { sectionId: 'ch-story', z: 52 },
+  { sectionId: 'ch-skills', z: 68 },
+  { sectionId: 'ch-projects', z: 84 },
+  { sectionId: 'ch-voice', z: 102 },
+  { sectionId: 'ch-vision', z: 120 },
+  { sectionId: 'ch-contact', z: 138 },
 ]
 
-const camZKey = Object.keys(CHAPTER_CAM_Z) as (keyof typeof CHAPTER_CAM_Z)[]
+const placements: Placement[] = [
+  { id: 'hero', formationId: 'hero', sectionId: 'ch-hero', z: -10, y: 2.85, target: { kind: 'shape', radius: 2.1 }, count: 16000, lowCount: 5500, rotate: true },
+  { id: 'work', formationId: 'work', sectionId: 'ch-work', z: 8, y: 0.2, target: { kind: 'text', text: 'MY WORK', height: 4.5 }, count: 16000, lowCount: 5200 },
+  { id: 'about', formationId: 'about', sectionId: 'ch-about', z: 26, y: 0.9, target: { kind: 'text', text: 'WHO IS RACHIT', height: 3.2 }, count: 16000, lowCount: 5200 },
+  { id: 'skills', formationId: 'skills', sectionId: 'ch-skills', z: 58, y: 0.9, target: { kind: 'text', text: 'WHAT I WORK WITH', height: 3.05 }, count: 16000, lowCount: 5200 },
+  { id: 'voice-title', formationId: 'voice', sectionId: 'ch-voice', z: 92, y: 2.15, target: { kind: 'text', text: 'VOICEMEMORIES AI', height: 2.5 }, count: 16000, lowCount: 5200 },
+  { id: 'voice-wave', formationId: 'voice', sectionId: 'ch-voice', z: 92, y: -1.35, target: { kind: 'wave' }, count: 16000, lowCount: 5200 },
+  { id: 'vision', formationId: 'vision', sectionId: 'ch-vision', z: 110, y: 1.1, target: { kind: 'text', text: 'MY VISION', height: 4.25 }, count: 16000, lowCount: 5200 },
+  { id: 'contact', formationId: 'contact', sectionId: 'ch-contact', z: 128, y: 1.2, target: { kind: 'text', text: 'SAY HELLO', height: 4.3 }, count: 16000, lowCount: 5200 },
+]
 
-function computeTops(): number[] {
-  return camZKey.map((id) => {
-    const el = document.getElementById(`ch-${id}`)
-    return el ? el.getBoundingClientRect().top + window.scrollY : 0
-  })
+const cameraState = {
+  z: 0,
+  mouseX: 0,
+  mouseY: 0,
 }
 
-function mapCamZ(scrollY: number): number {
-  const tops = computeTops()
-  const vals = camZKey.map((id) => CHAPTER_CAM_Z[id])
-  if (scrollY <= tops[0]) return vals[0]
+function interpolateCamera(scrollY: number, tops: number[]): number {
+  if (!tops.length || scrollY <= tops[0]) return cameraStops[0].z
+
   for (let i = 0; i < tops.length - 1; i++) {
-    const a = tops[i]
-    const b = tops[i + 1]
-    if (scrollY >= a && scrollY < b) {
-      const t = (scrollY - a) / Math.max(1, b - a)
-      const e = t * t * (3 - 2 * t)
-      return vals[i] + (vals[i + 1] - vals[i]) * e
+    if (scrollY >= tops[i] && scrollY < tops[i + 1]) {
+      const progress = (scrollY - tops[i]) / Math.max(1, tops[i + 1] - tops[i])
+      return THREE.MathUtils.lerp(cameraStops[i].z, cameraStops[i + 1].z, THREE.MathUtils.smootherstep(progress, 0, 1))
     }
   }
-  const lastTop = tops[tops.length - 1]
-  const lastVal = vals[vals.length - 1]
-  const tail = scrollY - lastTop
-  return tail > 0 ? lastVal - Math.min(tail / 90, 18) : lastVal
-}
 
-function computeScatter(cam: number): number {
-  const { from, to } = SCATTER_RANGE
-  const t = THREE.MathUtils.clamp((cam - from) / (to - from), 0, 1)
-  return Math.sin(t * Math.PI) * 0.55
-}
-
-function StarField({ formation }: { formation: Formation }) {
-  const group = useRef<THREE.Group>(null)
-  useFrame((state) => {
-    if (group.current) group.current.position.z = state.camera.position.z
-  })
-  return (
-    <group ref={group}>
-      <ParticlePoints formation={formation} />
-    </group>
-  )
+  return cameraStops[cameraStops.length - 1].z
 }
 
 function CameraRig() {
   const { camera } = useThree()
-  useFrame((_, delta) => {
-    const damp = THREE.MathUtils.damp
-    const tx = sceneState.mouseX * 2.2
-    const ty = -0.15 + sceneState.mouseY * 1.1
-    // oxlint-disable-next-line react/immutability
-    camera.position.x = damp(camera.position.x, tx, 3, delta)
-    // oxlint-disable-next-line react/immutability
-    camera.position.y = damp(camera.position.y, ty, 3, delta)
-    // oxlint-disable-next-line react/immutability
-    camera.position.z = damp(camera.position.z, sceneState.camZ, 5, delta)
-    camera.lookAt(tx * 0.55, ty * 0.55 + 0.3, camera.position.z + 9)
-  })
-  return null
-}
-
-function ClockDriver() {
-  useFrame(() => {
-    sharedUniforms.uTime.value = clock.getElapsedTime()
-    sharedUniforms.uScatter.value = sceneState.scatter
-  })
-  return null
-}
-
-export default function WorldScene() {
-  const stars: Formation = useMemo(() => buildFormation({ kind: 'stars', count: 1400 }), [])
-  const formations = useMemo(
-    () =>
-      placements.map((p) => ({
-        ...p,
-        formation: buildFormation(p.plan),
-      })),
-    [],
-  )
+  const cameraRef = useRef(camera)
 
   useEffect(() => {
-    sceneState.camZ = 0
-    sceneState.scatter = 0
+    cameraRef.current = camera
+  }, [camera])
 
-    const onMove = (e: PointerEvent) => {
-      sceneState.mouseX = (e.clientX / window.innerWidth) * 2 - 1
-      sceneState.mouseY = (e.clientY / window.innerHeight) * 2 - 1
+  useFrame((_, delta) => {
+    const x = cameraState.mouseX * 1.25
+    const y = cameraState.mouseY * 0.7
+    const activeCamera = cameraRef.current
+    activeCamera.position.x = THREE.MathUtils.damp(activeCamera.position.x, x, 3.2, delta)
+    activeCamera.position.y = THREE.MathUtils.damp(activeCamera.position.y, y, 3.2, delta)
+    activeCamera.position.z = THREE.MathUtils.damp(activeCamera.position.z, cameraState.z, 4.2, delta)
+    activeCamera.lookAt(x * 0.36, y * 0.34 + 0.1, activeCamera.position.z - 9.5)
+  })
+
+  return null
+}
+
+function StarField() {
+  const data = useMemo(() => createStarData(TIER === 'high' ? 3200 : 1200), [])
+  const material = useRef<THREE.ShaderMaterial>(null)
+  const uniforms = useMemo(() => ({ uPixelRatio: { value: 1 } }), [])
+
+  useFrame((state) => {
+    if (material.current) material.current.uniforms.uPixelRatio.value = state.gl.getPixelRatio()
+  })
+
+  return (
+    <points frustumCulled={false}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[data.positions, 3]} />
+        <bufferAttribute attach="attributes-aColor" args={[data.colors, 3]} />
+        <bufferAttribute attach="attributes-aSize" args={[data.sizes, 1]} />
+      </bufferGeometry>
+      <shaderMaterial
+        ref={material}
+        vertexShader={starVertexShader}
+        fragmentShader={starFragmentShader}
+        uniforms={uniforms}
+        transparent
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  )
+}
+
+function SceneController() {
+  const tops = useRef<number[]>([])
+
+  useEffect(() => {
+    const updateTops = () => {
+      tops.current = cameraStops.map((stop) => {
+        const element = document.getElementById(stop.sectionId)
+        return element ? element.getBoundingClientRect().top + window.scrollY : 0
+      })
+      cameraState.z = interpolateCamera(window.scrollY, tops.current)
     }
-    window.addEventListener('pointermove', onMove)
 
+    const onPointerMove = (event: PointerEvent) => {
+      cameraState.mouseX = (event.clientX / window.innerWidth) * 2 - 1
+      cameraState.mouseY = (event.clientY / window.innerHeight) * 2 - 1
+    }
+
+    updateTops()
+    const refresh = () => updateTops()
+    ScrollTrigger.addEventListener('refreshInit', refresh)
     const trigger = ScrollTrigger.create({
       start: 0,
-      end: () => document.documentElement.scrollHeight - window.innerHeight,
+      end: () => Math.max(1, document.documentElement.scrollHeight - window.innerHeight),
       onUpdate: (self) => {
-        const cam = mapCamZ(self.scroll())
-        sceneState.camZ = cam
-        sceneState.scatter = computeScatter(cam)
+        cameraState.z = interpolateCamera(self.scroll(), tops.current)
       },
     })
+    window.addEventListener('pointermove', onPointerMove)
+    ScrollTrigger.refresh()
 
-    gsap.registerPlugin(ScrollTrigger)
     return () => {
-      window.removeEventListener('pointermove', onMove)
+      ScrollTrigger.removeEventListener('refreshInit', refresh)
+      window.removeEventListener('pointermove', onPointerMove)
       trigger.kill()
     }
   }, [])
 
+  return null
+}
+
+export default function WorldScene() {
   return (
     <Canvas
       dpr={DPR_LIMIT}
       gl={{ antialias: false, alpha: true, powerPreference: 'high-performance' }}
-      camera={{ fov: 60, near: 0.3, far: 200, position: [0, 0, 0] }}
-      onCreated={({ gl }) => {
-        sharedUniforms.uPixelRatio.value = gl.getPixelRatio()
-      }}
+      camera={{ fov: 60, near: 0.3, far: 280, position: [0, 0, 0] }}
     >
+      <SceneController />
       <CameraRig />
-      <ClockDriver />
-      {formations.map(({ id, y, formation }) => (
-        <group key={id} position={[0, y, CHAPTER_CAM_Z[id] + FORMATION_DISTANCE]}>
-          <ParticlePoints formation={formation} />
-        </group>
+      <StarField />
+      {placements.map((placement) => (
+        <ParticleField
+          key={placement.id}
+          formationId={placement.formationId}
+          sectionId={placement.sectionId}
+          target={placement.target}
+          count={TIER === 'high' ? placement.count : placement.lowCount}
+          position={[0, placement.y, placement.z]}
+          rotate={placement.rotate}
+        />
       ))}
-      <StarField formation={stars} />
+      <EffectComposer multisampling={0}>
+        <Bloom intensity={0.78} luminanceThreshold={0.16} luminanceSmoothing={0.38} mipmapBlur />
+      </EffectComposer>
     </Canvas>
   )
 }

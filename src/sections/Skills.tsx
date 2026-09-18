@@ -8,12 +8,10 @@ const TOOLS: { name: string; tag: string }[] = [
 
 export function Skills() {
   return (
-    <section id="ch-skills" className="relative w-full px-6 py-28 lg:py-36">
+    <section id="ch-skills" className="relative w-full px-6 pb-28 pt-[52vh] lg:pb-36">
       <div className="mx-auto max-w-5xl text-center">
-        <p data-reveal className="glow-text font-[family-name:var(--font-display)] text-4xl font-bold text-white sm:text-5xl">
-          What I Work With
-        </p>
-        <p data-reveal data-reveal-delay="0.1" className="muted mt-4 text-sm sm:text-base">
+        <h2 className="sr-only">What I Work With</h2>
+        <p data-reveal data-reveal-delay="0.1" className="muted text-sm sm:text-base">
           A few of my daily tools across 25+ AI tools
         </p>
 
